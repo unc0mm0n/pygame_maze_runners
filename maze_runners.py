@@ -14,6 +14,7 @@ class MazeRunner(object):
         ''' Resets the node list and frontier.'''
         self.came_from = {}
         self.frontier = deque()
+        self.path = False
 
     def search_maze(self, maze):
         raise NotImplemented("subclass and implement this!")
@@ -25,7 +26,7 @@ class MazeRunner(object):
             loc = self.came_from[loc]
             path.append(loc)
 
-        self.path = reversed(path)
+        self.path = list(reversed(path))
 
 
 class BreathRunner(MazeRunner):
@@ -76,24 +77,25 @@ class RecursiveRunner(MazeRunner):
 
         def search_maze_helper(loc):
             ''' A recursive function to search through the maze. '''
-            yield loc
-            if loc == maze.end:
-                print('out')
-                self.path = self.construct_path(loc)
+            if self.path:
+                # Return if a solution was already found
                 return
 
-            for n in maze.get_neighbours(loc):
+            yield loc
+            if loc == maze.end:
+                # Build a path
+                self.construct_path(loc)
+                return
+
+            neighbours = maze.get_neighbours(loc)
+            neighbours = sorted(neighbours, key=lambda n: n[0] * 1 + n[1] * 10)
+            for n in neighbours:
                 if n not in self.came_from:
                     self.came_from[n] = loc
                     yield from search_maze_helper(n)
-
-            return
 
         self.reset()
         self.maze = maze
         self.came_from[maze.start] = None
 
         yield from search_maze_helper(maze.start)
-
-        # If after the serach we did not find anything
-        self.path = False
