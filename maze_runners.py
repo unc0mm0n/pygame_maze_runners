@@ -1,4 +1,5 @@
 from collections import deque
+import heapq as hq
 
 
 class MazeRunner(object):
@@ -99,3 +100,61 @@ class RecursiveRunner(MazeRunner):
         self.came_from[maze.start] = None
 
         yield from search_maze_helper(maze.start)
+
+
+class GreedyFirstRunner(MazeRunner):
+
+    '''
+    A Maze runner using a Greedy Best-First algorithm.
+    maze Must have an endpoint for the search to work.
+    '''
+
+    def reset(self):
+        ''' Resets the Greedy First-search runner. '''
+        super().reset()
+        self.frontier = []
+
+    def push_to_frontier(self, loc, priority=0):
+        hq.heappush(self.frontier, (priority, loc))
+
+    def get_from_frontier(self):
+        return hq.heappop(self.frontier)[1]
+
+    def distance_heuristic(self, loc):
+        ''' The distance heuristic used calculates the total distance of
+            the x and y values from loc to the end. '''
+
+        if not self.end:
+            return 0
+        return abs(self.end[0] - loc[0]) + abs(self.end[1] - loc[1])
+
+    def search_maze(self, maze):
+        ''' A generator that yields the next step in the maze
+            until getting to the end, using a greedy Best-First algorithm.
+            Maze must have an endpoint for the search to work.'''
+
+        self.reset()
+        self.maze = maze
+        self.end = maze.end
+        self.came_from[maze.start] = None
+        self.push_to_frontier(maze.start)
+
+        while self.frontier:
+            current = self.get_from_frontier()
+            yield current
+
+            # If we found the end
+            if current == maze.end:
+                # Return the path to the end
+                self.construct_path(current)
+                return
+
+            # Otherwise get all the new neighbours and add them to the frontier
+            for neighbour in maze.get_neighbours(current):
+                if neighbour not in self.came_from:
+                    priority = self.distance_heuristic(neighbour)
+                    self.push_to_frontier(neighbour, priority)
+                    self.came_from[neighbour] = current
+
+            # If after the search we did not find anything
+        self.path = False
