@@ -4,8 +4,7 @@ from collections import deque
 class MazeRunner(object):
 
     '''
-    A maze runner is an object that finds the exit in the maze class,
-    keeping it's own states.
+    A base class for the maze runners, with no search algorithm implemented.
     '''
 
     def __init__(self):
@@ -17,8 +16,27 @@ class MazeRunner(object):
         self.frontier = deque()
 
     def search_maze(self, maze):
+        raise NotImplemented("subclass and implement this!")
+
+    def construct_path(self, loc):
+        ''' Returns a list of all tiles visited to given loc, if possible.'''
+        path = [loc]
+        while self.came_from[loc]:
+            loc = self.came_from[loc]
+            path.append(loc)
+
+        self.path = reversed(path)
+
+
+class BreathRunner(MazeRunner):
+
+    '''
+    A maze runner for the maze class using the breath-first algorithm.
+    '''
+
+    def search_maze(self, maze):
         ''' A generator the yields the next step in the maze
-            until getting to the end. '''
+            until getting to the end. using breath-first algorithm. '''
 
         self.reset()
         self.maze = maze
@@ -44,11 +62,38 @@ class MazeRunner(object):
             # If after the search we did not find anything
         self.path = False
 
-    def construct_path(self, loc):
-        ''' Returns a list of all tiles visited to given loc, if possible.'''
-        path = [loc]
-        while self.came_from[loc]:
-            loc = self.came_from[loc]
-            path.append(loc)
 
-        self.path = reversed(path)
+class RecursiveRunner(MazeRunner):
+
+    '''
+    A maze runner for the maze class using a procedural
+    recursive algorithm.
+    '''
+
+    def search_maze(self, maze):
+        ''' A generator the yields the next step in the maze
+            until getting to the end, using recursive algorithm. '''
+
+        def search_maze_helper(loc):
+            ''' A recursive function to search through the maze. '''
+            yield loc
+            if loc == maze.end:
+                print('out')
+                self.path = self.construct_path(loc)
+                return
+
+            for n in maze.get_neighbours(loc):
+                if n not in self.came_from:
+                    self.came_from[n] = loc
+                    yield from search_maze_helper(n)
+
+            return
+
+        self.reset()
+        self.maze = maze
+        self.came_from[maze.start] = None
+
+        yield from search_maze_helper(maze.start)
+
+        # If after the serach we did not find anything
+        self.path = False
