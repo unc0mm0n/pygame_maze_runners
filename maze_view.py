@@ -51,14 +51,12 @@ class MazeView(object):
     def step(self):
         ''' Move all the runs one step, and append to visits.'''
         for idx, run in enumerate(self.runs):
-            print(run)
             try:
                 next_loc = next(run)
-                print(next_loc, " Came for a visit")
                 self.visits[next_loc].append(idx)
             except StopIteration:
-                self.runs.remove(run)
-            print(run, " complete")
+                pass
+
         if not self.runs:
             self.running = False
 
@@ -95,11 +93,12 @@ class MazeView(object):
 
 if __name__ == '__main__':
     m = maze.Maze.FromFile('maze2.txt')
+    m.draw_maze()
     r = mr.BreathRunner()
     r2 = mr.RecursiveRunner()
     view = MazeView(m, [r, r2])
     while view.running:
         view.step()
-        sleep(0.4)
+        sleep(0.1)
     input()
 
