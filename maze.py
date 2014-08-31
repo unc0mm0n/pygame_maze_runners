@@ -103,14 +103,13 @@ class MazeRunner(object):
 
         while self.frontier:
             current = self.frontier.popleft()
+            yield current
 
             # If we found the end
             if current == maze.end:
                 # Return the path to the end
                 self.construct_path(current)
                 return
-
-            yield current
 
             # Otherwise get all the new neighbours and add them to the frontier
             for neighbour in maze.get_neighbours(current):
@@ -130,15 +129,16 @@ class MazeRunner(object):
 
         self.path = reversed(path)
 
-myMaze = Maze.FromFile('maze2.txt')
-r1 = MazeRunner()
+if __name__ == '__main__':
+    myMaze = Maze.FromFile('maze2.txt')
+    r1 = MazeRunner()
 
-for tile in r1.search_maze(myMaze):
-    pass
+    for tile in r1.search_maze(myMaze):
+        pass
 
-for tile in r1.path:
-    os.system('cls')
-    y, x = tile
-    myMaze[y][x] = ':'
-    myMaze.draw_maze()
-    sleep(0.3)
+    for tile in r1.path:
+        os.system('cls')
+        y, x = tile
+        myMaze[y][x] = ':'
+        myMaze.draw_maze()
+        sleep(0.3)
