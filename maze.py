@@ -26,7 +26,7 @@ class Maze:
 
         return cls(maze, start, end)
 
-    def __init__(self, maze, start, end):
+    def __init__(self, maze, start, end=None):
         '''
         Initialize a maze using a 2 dimensional list
         where '+' marks an obstacle, a start location and an end location.
@@ -38,8 +38,14 @@ class Maze:
         self.cols = len(maze[0])
         self.start = start
         self.end = end
-        maze[start[0]][start[1]] = START
-        maze[end[0]][end[1]] = END
+
+        if self.is_valid_tile(*start):
+            maze[start[0]][start[1]] = START
+        else:
+            raise ValueError("Invalid start location")
+
+        if end and self.is_valid_tile(*end):
+            maze[end[0]][end[1]] = END
 
     def draw_maze(self):
         for row in self.maze:
@@ -74,9 +80,6 @@ class Maze:
 
     def __getitem__(self, idx):
         return self.maze[idx]
-
-
-
 
 if __name__ == '__main__':
     from maze_runners import *
