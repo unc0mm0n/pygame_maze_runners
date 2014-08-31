@@ -6,10 +6,11 @@ from pygame.locals import *
 from collections import defaultdict
 from time import sleep
 
-BG_COLOR = 0, 0, 0
+BG_COLOR = 100, 100, 100
 WALL_COLOR = 200, 200, 255
 START_COLOR = 255, 255, 255
 END_COLOR = 255, 165, 0
+BLOCK_COLOR = 0, 0, 0
 
 BLOCK_SIZE = 20
 MARK_SIZE = 4
@@ -50,14 +51,15 @@ class MazeView(object):
 
     def step(self):
         ''' Move all the runs one step, and append to visits.'''
+        done = 0
         for idx, run in enumerate(self.runs):
             try:
                 next_loc = next(run)
                 self.visits[next_loc].append(idx)
             except StopIteration:
-                pass
+                done += 1
 
-        if not self.runs:
+        if done == len(self.runs):
             self.running = False
 
         self.draw_visits()
@@ -80,25 +82,30 @@ class MazeView(object):
         return rect
 
     def draw_maze(self):
+        self.screen.fill(BG_COLOR)
         for row in range(self.maze.rows):
             for col in range(self.maze.cols):
                 rect = self.get_block(row, col)
-                if self.maze[row][col] == maze.WALL:
-                    pygame.draw.rect(self.screen, WALL_COLOR, rect)
                 if (row, col) == self.maze.start:
                     pygame.draw.rect(self.screen, START_COLOR, rect)
-                if (row, col) == self.maze.end:
+                elif (row, col) == self.maze.end:
                     pygame.draw.rect(self.screen, END_COLOR, rect)
+                elif self.maze[row][col] == maze.WALL:
+                    pygame.draw.rect(self.screen, WALL_COLOR, rect)
+                else:
+                    rect = self.get_block(row, col, 1)
+                    pygame.draw.rect(self.screen, BLOCK_COLOR, rect)
         pygame.display.flip()
 
 if __name__ == '__main__':
-    m = maze.Maze.FromFile('maze2.txt')
-    m.draw_maze()
+    m = maze.Maze.FromFile('maze3.txt')
     r = mr.BreathRunner()
     r2 = mr.RecursiveRunner()
-    view = MazeView(m, [r, r2])
+    r3 = mr.GreedyFirstRunner()
+    view = MazeView(m, [r, r2, r3])
     while view.running:
         view.step()
         sleep(0.1)
+    print(r3.path)
     input()
 
