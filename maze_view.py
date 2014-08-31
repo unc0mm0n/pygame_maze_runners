@@ -1,5 +1,7 @@
 import pygame
 import maze
+import maze_runners as mr
+
 from pygame.locals import *
 from collections import defaultdict
 from time import sleep
@@ -49,17 +51,22 @@ class MazeView(object):
     def step(self):
         ''' Move all the runs one step, and append to visits.'''
         for idx, run in enumerate(self.runs):
+            print(run)
             try:
                 next_loc = next(run)
+                print(next_loc, " Came for a visit")
                 self.visits[next_loc].append(idx)
             except StopIteration:
                 self.runs.remove(run)
+            print(run, " complete")
         if not self.runs:
             self.running = False
 
         self.draw_visits()
 
     def draw_visits(self):
+        ''' draw all the given visits, each visit is a location as the key
+            and a list of runners that visited it as value.'''
         for visit in self.visits:
             for visitor in self.visits[visit]:
                 rect = self.get_block(*visit, padding=MARK_PADDING)
@@ -88,14 +95,11 @@ class MazeView(object):
 
 if __name__ == '__main__':
     m = maze.Maze.FromFile('maze2.txt')
-    r = maze.MazeRunner()
-    r2 = maze.MazeRunner()
-    r3 = maze.MazeRunner()
-    r5 = maze.MazeRunner()
-    r4 = maze.MazeRunner()
-    view = MazeView(m, [r, r2, r3, r4, r5])
+    r = mr.BreathRunner()
+    r2 = mr.RecursiveRunner()
+    view = MazeView(m, [r, r2])
     while view.running:
         view.step()
-        sleep(0.2)
+        sleep(0.4)
     input()
 
