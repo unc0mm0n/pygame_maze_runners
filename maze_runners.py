@@ -11,11 +11,14 @@ class MazeRunner(object):
     def __init__(self):
         self.reset()
 
+    def __len__(self):
+        return len(self.path)
+
     def reset(self):
         ''' Resets the node list and frontier.'''
         self.came_from = {}
         self.frontier = deque()
-        self.path = False
+        self.path = []
 
     def search_maze(self, maze):
         raise NotImplemented("subclass and implement this!")
@@ -61,8 +64,7 @@ class BreathRunner(MazeRunner):
                     self.frontier.append(neighbour)
                     self.came_from[neighbour] = current
 
-            # If after the search we did not find anything
-        self.path = False
+            # If after the search we did not find anything, path will still be empty
 
 
 class RecursiveRunner(MazeRunner):
@@ -156,5 +158,4 @@ class GreedyFirstRunner(MazeRunner):
                     self.push_to_frontier(neighbour, priority)
                     self.came_from[neighbour] = current
 
-            # If after the search we did not find anything
-        self.path = False
+            # If There is no solution, path will still be empty
