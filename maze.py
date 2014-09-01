@@ -84,15 +84,13 @@ class Maze:
 if __name__ == '__main__':
     from maze_runners import *
 
-    myMaze = Maze.FromFile('maze2.txt')
+    myMaze = Maze.FromFile('maze4.txt')
     r1 = BreathRunner()
 
     for tile in r1.search_maze(myMaze):
-        pass
 
-    for tile in r1.path:
-        os.system('cls')
-        y, x = tile
-        myMaze[y][x] = ':'
-        myMaze.draw_maze()
-        sleep(0.3)
+        continue
+
+    print(r1.path)
+
+
