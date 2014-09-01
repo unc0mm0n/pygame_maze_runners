@@ -1,4 +1,5 @@
 from time import sleep
+from random import random
 import os
 
 START = 'S'
@@ -26,6 +27,29 @@ class Maze:
 
         return cls(maze, start, end)
 
+    @classmethod
+    def Random(cls, width, height, ratio, start=(0, 0), end=None):
+        ''' Generate a maze randomly if given width and height.
+            Higher ratio = more walls. '''
+        if not end:
+            end = (height - 1, width - 1)
+
+        maze = []
+        for y in range(height):
+            row = []
+            for x in range(width):
+                if random() < ratio:
+                    row.append(WALL)
+                else:
+                    row.append(' ')
+
+            maze.append(row)
+
+        maze[start[0]][start[1]] = ' '
+        maze[end[0]][end[1]] = ' '
+
+        return cls(maze, start, end)
+
     def __init__(self, maze, start, end=None):
         '''
         Initialize a maze using a 2 dimensional list
@@ -37,7 +61,6 @@ class Maze:
         self.rows = len(maze)
         self.cols = len(maze[0])
         self.start = start
-        self.end = end
 
         if self.is_valid_tile(*start):
             maze[start[0]][start[1]] = START
@@ -46,6 +69,9 @@ class Maze:
 
         if end and self.is_valid_tile(*end):
             maze[end[0]][end[1]] = END
+            self.end = end
+        else:
+            self.end = None
 
     def draw_maze(self):
         for row in self.maze:
@@ -84,10 +110,10 @@ class Maze:
 if __name__ == '__main__':
     from maze_runners import *
 
-    myMaze = Maze.FromFile('maze4.txt')
-    r1 = BreathRunner()
+    m = Maze.Random(300, 300, 0.23, (50, 50), (298, 298))
+    r1 = AStarRunner()
 
-    for tile in r1.search_maze(myMaze):
+    for tile in r1.search_maze(m):
 
         continue
 
