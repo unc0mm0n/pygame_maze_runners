@@ -12,11 +12,11 @@ START_COLOR = 255, 255, 255
 END_COLOR = 255, 165, 0
 BLOCK_COLOR = 0, 0, 0
 
-BLOCK_SIZE = 20
-MARK_SIZE = 4
+BLOCK_SIZE = 15
+MARK_SIZE = 5
 MARK_PADDING = BLOCK_SIZE - MARK_SIZE
-COLORS = [(255, 0, 0), (0, 255, 0), (0, 0, 255),
-                     (0, 255, 255), (255, 255, 0), (255, 0, 255)]
+COLORS = [(255, 0, 0), (0, 255, 0), (255, 0, 255),
+                     (255, 255, 0), (255, 0, 255)]
 
 
 class MazeView(object):
@@ -72,8 +72,9 @@ class MazeView(object):
             for visitor in self.visits[visit]:
                 # get a rect in the corret size
                 rect = self.get_block(*visit, padding=MARK_PADDING)
-                # set the offset to support 5 runners diagonally
-                offset = MARK_SIZE * (-2 + visitor)
+                runner_offset = len(self.runners) / 2 - 0.5
+                # set the offset to support 4 runners diagonally
+                offset = MARK_SIZE * (visitor - runner_offset) * 0.66
                 rect.move_ip(offset, offset)
                 pygame.draw.rect(self.screen, COLORS[visitor], rect)
                 # Remove the visit so it won't get drawn again and again
@@ -111,15 +112,17 @@ class MazeView(object):
         pygame.display.flip()
 
 if __name__ == '__main__':
-    m = maze.Maze.FromFile('maze5.txt')
-    r1 = mr.RecursiveRunner()
+    m = maze.Maze.Random(100, 100, 0.23, (1, 1), (98, 98))
+    r1 = mr.AStarTiebreakRunner()
     r2 = mr.BreathRunner()
     r3 = mr.GreedyFirstRunner()
-    view = MazeView(m, [r1, r2, r3])
+    r4 = mr.AStarRunner()
+    view = MazeView(m, [r1, r2, r3, r4])
     while view.running:
         view.step()
     print('Breath ', len(r2), len(r2.came_from),
-            '\nrecursive', len(r1), len(r1.came_from),
-            '\ngreedy ', len(r3), len(r3.came_from))
+            '\ngreedy ', len(r3), len(r3.came_from),
+            '\nA* ', len(r4), len(r4.came_from),
+            '\nA* tiebreak ', len(r1), len(r1.came_from))
     input()
 
