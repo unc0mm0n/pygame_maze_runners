@@ -1,5 +1,6 @@
 from collections import deque
 import heapq as hq
+from math import sqrt
 
 
 class MazeRunner(object):
@@ -24,13 +25,22 @@ class MazeRunner(object):
         raise NotImplemented("subclass and implement this!")
 
     def construct_path(self, loc):
-        ''' Returns a list of all tiles visited to given loc, if possible.'''
+        ''' Returns a list of all tiles visited to given loc, if possible.
+            Return None otherwise. '''
         path = [loc]
+        if loc not in self.came_from:
+            return None
         while self.came_from[loc]:
             loc = self.came_from[loc]
             path.append(loc)
 
-        self.path = list(reversed(path))
+        return list(reversed(path))
+
+    def solve(self, maze):
+        ''' Return a path through a solved maze.'''
+        for _ in self.search_maze(maze):
+            pass
+        return self.path
 
 
 class BreathRunner(MazeRunner):
@@ -55,7 +65,7 @@ class BreathRunner(MazeRunner):
             # If we found the end
             if current == maze.end:
                 # Return the path to the end
-                self.construct_path(current)
+                self.path = self.construct_path(current)
                 return
 
             # Otherwise get all the new neighbours and add them to the frontier
@@ -63,8 +73,6 @@ class BreathRunner(MazeRunner):
                 if neighbour not in self.came_from:
                     self.frontier.append(neighbour)
                     self.came_from[neighbour] = current
-
-            # If after the search we did not find anything, path will still be empty
 
 
 class RecursiveRunner(MazeRunner):
@@ -87,7 +95,7 @@ class RecursiveRunner(MazeRunner):
             yield loc
             if loc == maze.end:
                 # Build a path
-                self.construct_path(loc)
+                self.path = self.construct_path(loc)
                 return
 
             neighbours = maze.get_neighbours(loc)
@@ -108,7 +116,7 @@ class GreedyFirstRunner(MazeRunner):
 
     '''
     A Maze runner using a Greedy Best-First algorithm.
-    maze Must have an endpoint for the search to work.
+    If no endpoint is given all cells .
     '''
 
     def reset(self):
@@ -123,8 +131,9 @@ class GreedyFirstRunner(MazeRunner):
         return hq.heappop(self.frontier)[1]
 
     def distance_heuristic(self, loc):
-        ''' The distance heuristic used calculates the total distance of
-            the x and y values from loc to the end. '''
+        ''' The distance heuristic used calculates the
+            expected distance from the end.
+            Return 0 if no there's no end point. '''
 
         if not self.end:
             return 0
@@ -148,14 +157,63 @@ class GreedyFirstRunner(MazeRunner):
             # If we found the end
             if current == maze.end:
                 # Return the path to the end
-                self.construct_path(current)
+                self.path = self.construct_path(current)
                 return
 
             # Otherwise get all the new neighbours and add them to the frontier
             for neighbour in maze.get_neighbours(current):
                 if neighbour not in self.came_from:
+                    self.came_from[neighbour] = current
                     priority = self.distance_heuristic(neighbour)
                     self.push_to_frontier(neighbour, priority)
-                    self.came_from[neighbour] = current
 
-            # If There is no solution, path will still be empty
+
+class AStarRunner(GreedyFirstRunner):
+
+    ''' A Maze runner using the A* algorithm to find the shortest path.'''
+
+    def search_maze(self, maze):
+        ''' A generator that yields the next step in the maze
+            until getting to the end, using a greedy Best-First algorithm.
+            Maze must have an endpoint for the search to work.'''
+
+        self.reset()
+
+        self.maze = maze
+        self.end = maze.end
+        self.start = maze.start
+        self.came_from[maze.start] = None
+        self.push_to_frontier(maze.start)
+
+        while self.frontier:
+            current = self.get_from_frontier()
+            yield current
+
+            # If we found the end
+            if current == maze.end:
+                # Return the path to the end
+                self.path = self.construct_path(current)
+                return
+
+            # Otherwise get all the new neighbours and add them to the frontier
+            new_cost = len(self.construct_path(current)) + 1
+            for neighbour in maze.get_neighbours(current):
+                old_path = self.construct_path(neighbour)
+                if not old_path or new_cost < len(old_path):
+                    self.came_from[neighbour] = current
+                    priority = new_cost + self.distance_heuristic(neighbour)
+                    self.push_to_frontier(neighbour, priority)
+
+class AStarTiebreakRunner(AStarRunner):
+
+    ''' AStarRunner with a tiebreak inside the heuristic to prefer
+        nodes closer to the goal.'''
+
+    def distance_heuristic(self, loc):
+        dist = super().distance_heuristic(loc)
+        dy1 = loc[0] - self.end[0]
+        dx1 = loc[1] - self.end[1]
+        dy2 = self.start[0] - self.end[0]
+        dx2 = self.start[1] - self.end[1]
+        cross = abs(dx1*dy2 - dx2*dy1)
+        return dist + cross * 0.001
