@@ -68,14 +68,20 @@ class MazeView(object):
         ''' draw all the given visits, each visit is a location as the key
             and a list of runners that visited it as value.'''
         for visit in self.visits:
+            # for each visitor in each cell (idx number of runner from 0)
             for visitor in self.visits[visit]:
+                # get a rect in the corret size
                 rect = self.get_block(*visit, padding=MARK_PADDING)
+                # set the offset to support 5 runners diagonally
                 offset = MARK_SIZE * (-2 + visitor)
                 rect.move_ip(offset, offset)
                 pygame.draw.rect(self.screen, COLORS[visitor], rect)
+                # Remove the visit so it won't get drawn again and again
+                self.visits[visit].remove(visitor)
         pygame.display.flip()
 
     def get_block(self, row, col, padding=0):
+        # Return the block at given location with given padding
         row, col = row*BLOCK_SIZE + padding / 2, col*BLOCK_SIZE + padding / 2
         rect = Rect(col, row, BLOCK_SIZE - padding,
                                         BLOCK_SIZE - padding)
@@ -83,29 +89,37 @@ class MazeView(object):
 
     def draw_maze(self):
         self.screen.fill(BG_COLOR)
+
+        # Iterate each cell in the maze
         for row in range(self.maze.rows):
             for col in range(self.maze.cols):
-                rect = self.get_block(row, col)
-                if (row, col) == self.maze.start:
-                    pygame.draw.rect(self.screen, START_COLOR, rect)
-                elif (row, col) == self.maze.end:
-                    pygame.draw.rect(self.screen, END_COLOR, rect)
-                elif self.maze[row][col] == maze.WALL:
-                    pygame.draw.rect(self.screen, WALL_COLOR, rect)
-                else:
-                    rect = self.get_block(row, col, 1)
-                    pygame.draw.rect(self.screen, BLOCK_COLOR, rect)
+                try:
+                    # draw accoridng to it's value
+                    rect = self.get_block(row, col)
+                    if (row, col) == self.maze.start:
+                        pygame.draw.rect(self.screen, START_COLOR, rect)
+                    elif (row, col) == self.maze.end:
+                        pygame.draw.rect(self.screen, END_COLOR, rect)
+                    elif self.maze[row][col] == maze.WALL:
+                        pygame.draw.rect(self.screen, WALL_COLOR, rect)
+                    else:
+                        rect = self.get_block(row, col, 1)
+                        pygame.draw.rect(self.screen, BLOCK_COLOR, rect)
+                except:
+                    print('rogue coors ', row, col)
+
         pygame.display.flip()
 
 if __name__ == '__main__':
-    m = maze.Maze.FromFile('maze3.txt')
-    r = mr.BreathRunner()
-    r2 = mr.RecursiveRunner()
+    m = maze.Maze.FromFile('maze5.txt')
+    r1 = mr.RecursiveRunner()
+    r2 = mr.BreathRunner()
     r3 = mr.GreedyFirstRunner()
-    view = MazeView(m, [r, r2, r3])
+    view = MazeView(m, [r1, r2, r3])
     while view.running:
         view.step()
-        sleep(0.1)
-    print(r3.path)
+    print('Breath ', len(r2), len(r2.came_from),
+            '\nrecursive', len(r1), len(r1.came_from),
+            '\ngreedy ', len(r3), len(r3.came_from))
     input()
 
