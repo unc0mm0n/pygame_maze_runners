@@ -203,6 +203,7 @@ class AStarRunner(GreedyFirstRunner):
                     priority = new_cost + self.distance_heuristic(neighbour)
                     self.push_to_frontier(neighbour, priority)
 
+
 class AStarTiebreakRunner(AStarRunner):
 
     ''' AStarRunner with a tiebreak inside the heuristic to prefer
@@ -210,9 +211,24 @@ class AStarTiebreakRunner(AStarRunner):
 
     def distance_heuristic(self, loc):
         dist = super().distance_heuristic(loc)
+        if dist == 0:
+            return dist
+
+        # Get the cross product of the vectors:
+        # (start, end), (loc, end)
+        # Which is also the area of the parallelogram formed by the vectors.
         dy1 = loc[0] - self.end[0]
         dx1 = loc[1] - self.end[1]
         dy2 = self.start[0] - self.end[0]
         dx2 = self.start[1] - self.end[1]
         cross = abs(dx1*dy2 - dx2*dy1)
+
+        # Add the cross product as a small fraction to the calculation
+        # to break ties by picking the node closer to a straight line
+        # to the goal.
+        # Note that this makes the heuristic inadmissable!
+        # Though this will come into effect only in rare cases and where the expected
+        # Path length is bigger than 1000.
+        # This can be optimized by changing 0.001 to a smaller number that fits the
+        # maze size.
         return dist + cross * 0.001

@@ -14,9 +14,8 @@ BLOCK_COLOR = 0, 0, 0
 COLORS = [(255, 0, 0), (0, 255, 0), (255, 0, 255),
                      (255, 255, 0), (255, 0, 255)]
 
-BLOCK_SIZE = 10
+BLOCK_SIZE = 20
 FPS = 60
-
 
 
 class MazeView(object):
@@ -36,8 +35,8 @@ class MazeView(object):
             self.block_size = BLOCK_SIZE
 
         # Caulculate window sizer
-        self.height = maze.rows * block_size
-        self.width = maze.cols * block_size
+        self.height = maze.rows * self.block_size
+        self.width = maze.cols * self.block_size
 
         # Set mark size to default if needed
         if mark_size:
@@ -46,7 +45,7 @@ class MazeView(object):
             # default mark_size is calculated to exactly fit all runners.
             self.mark_size = self.block_size / len(self.runners)
 
-        self.mark_padding = block_size - self.mark_size
+        self.mark_padding = self.block_size - self.mark_size
 
         self.window = pygame.display.set_mode((self.width, self.height))
         self.screen = pygame.display.get_surface()
@@ -118,7 +117,7 @@ class MazeView(object):
                 # With the initial padding used to determine the center location.
                 offset = self.mark_padding * runner_offset
                 # Move the rectangle in place by the offset
-                
+
                 rect.move_ip(offset, offset)
                 pygame.draw.rect(self.screen, COLORS[visitor], rect)
                 # Remove the visit so it won't get drawn again and again
@@ -156,25 +155,34 @@ class MazeView(object):
 
         pygame.display.flip()
 
+    def draw_path(self, path, color):
+        ''' Draw given path (list of coordinates) on the maze.'''
+        for loc in path:
+            rect = self.get_block(*loc)
+            pygame.draw.rect(self.screen, color, rect)
+        pygame.display.flip()
+
 if __name__ == '__main__':
-    os.environ['SDL_VIDEO_WINDOW_POS'] = "{x}, {y}".format(x = 10, y = 30)
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "{}, {}".format(10, 30)
 
     from random import randint
     start, end = [(randint(0, 199), randint(0, 199)) for _ in range(2)]
-    
-    m = maze.Maze.Random(200, 200, 0.33, start, end)
-    
+
+    m = maze.Maze.FromFile('bird.txt')
+
     r1 = mr.AStarTiebreakRunner()
     r2 = mr.BreathRunner()
     r3 = mr.GreedyFirstRunner()
     r4 = mr.AStarRunner()
-    view = MazeView(m, [r1], 5, 5)
-    view.run(False)
+    view = MazeView(m, [r1])
+    #r4.solve(m)
+    #view.draw_path(r4.path, (255, 0, 0))
+    #r1.solve(m)
+    #view.draw_path(r1.path, (0, 0, 255))
+    view.run()
     print('Breath ', len(r2), len(r2.came_from),
             '\ngreedy ', len(r3), len(r3.came_from),
             '\nA* ', len(r4), len(r4.came_from),
             '\nA* tiebreak ', len(r1), len(r1.came_from))
-    
 
     input()
-
