@@ -1,6 +1,4 @@
-from time import sleep
 from random import random
-import os
 
 START = 'S'
 END = 'E'

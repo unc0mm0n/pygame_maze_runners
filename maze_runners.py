@@ -1,6 +1,5 @@
 from collections import deque
 import heapq as hq
-from math import sqrt
 
 
 class MazeRunner(object):
