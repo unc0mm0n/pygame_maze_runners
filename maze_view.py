@@ -4,19 +4,19 @@ import maze_runners as mr
 
 from pygame.locals import *
 from collections import defaultdict
-from time import sleep
+import os
 
 BG_COLOR = 100, 100, 100
-WALL_COLOR = 200, 200, 255
+WALL_COLOR = 200, 200, 200
 START_COLOR = 255, 255, 255
 END_COLOR = 255, 165, 0
 BLOCK_COLOR = 0, 0, 0
-
-BLOCK_SIZE = 15
-MARK_SIZE = 5
-MARK_PADDING = BLOCK_SIZE - MARK_SIZE
 COLORS = [(255, 0, 0), (0, 255, 0), (255, 0, 255),
                      (255, 255, 0), (255, 0, 255)]
+
+BLOCK_SIZE = 10
+FPS = 60
+
 
 
 class MazeView(object):
@@ -25,27 +25,47 @@ class MazeView(object):
     A view for a Maze class with runners.
     '''
 
-    def __init__(self, maze, runners=None):
+    def __init__(self, maze, runners=None, block_size=None, mark_size=None):
         ''' Initialize view for given maze with given runners. '''
         self.maze = maze
         self.runners = runners or list()
 
-        self.height = maze.rows * BLOCK_SIZE
-        self.width = maze.cols * BLOCK_SIZE
+        # Set block_size to default of needed
+        self.block_size = block_size
+        if not block_size:
+            self.block_size = BLOCK_SIZE
+
+        # Caulculate window sizer
+        self.height = maze.rows * block_size
+        self.width = maze.cols * block_size
+
+        # Set mark size to default if needed
+        if mark_size:
+            self.mark_size = mark_size
+        else:
+            # default mark_size is calculated to exactly fit all runners.
+            self.mark_size = self.block_size / len(self.runners)
+
+        self.mark_padding = block_size - self.mark_size
 
         self.window = pygame.display.set_mode((self.width, self.height))
         self.screen = pygame.display.get_surface()
-
+        self.timer = pygame.time.Clock()
         self.reset()
 
     def reset(self):
         ''' Resets all the runs for the view.'''
         self.visits = defaultdict(list)
         self.runs = []
+
+        # For every runner given
         for runner in self.runners:
+            # Create a new run generator using the runner's
+            # seartch_maze method.
             self.runs.append(runner.search_maze(self.maze))
 
         if self.runs:
+            # Set self to running as long as we have at least one run
             self.running = True
         self.draw_maze()
 
@@ -53,16 +73,31 @@ class MazeView(object):
         ''' Move all the runs one step, and append to visits.'''
         done = 0
         for idx, run in enumerate(self.runs):
+            # For each of our runs.
             try:
+                # Try to get the next location in the run
                 next_loc = next(run)
                 self.visits[next_loc].append(idx)
             except StopIteration:
+                # keep track of the number of done runs.
                 done += 1
 
-        if done == len(self.runs):
-            self.running = False
+        return(done)
 
         self.draw_visits()
+
+    def run(self, winner=False):
+        ''' Run all runners through the maze.
+            If winner is set to True will exit when the first runner
+            Reach the exit. '''
+        if winner:
+            goal = 1
+        else:
+            goal = len(self.runs)
+
+        while self.step() < goal:
+            self.draw_visits()
+            self.timer.tick(FPS)
 
     def draw_visits(self):
         ''' draw all the given visits, each visit is a location as the key
@@ -71,10 +106,19 @@ class MazeView(object):
             # for each visitor in each cell (idx number of runner from 0)
             for visitor in self.visits[visit]:
                 # get a rect in the corret size
-                rect = self.get_block(*visit, padding=MARK_PADDING)
-                runner_offset = len(self.runners) / 2 - 0.5
-                # set the offset to support 4 runners diagonally
-                offset = MARK_SIZE * (visitor - runner_offset) * 0.66
+                rect = self.get_block(*visit, padding=self.mark_padding)
+
+                # Calculate the location of the specific runner
+                if len(self.runners) == 1:
+                    runner_offset = 0
+                else:
+                    runner_offset = visitor / (len(self.runners) - 1) - 0.5
+
+                # Calculate the offset by multiplying the offset of the current runner
+                # With the initial padding used to determine the center location.
+                offset = self.mark_padding * runner_offset
+                # Move the rectangle in place by the offset
+                
                 rect.move_ip(offset, offset)
                 pygame.draw.rect(self.screen, COLORS[visitor], rect)
                 # Remove the visit so it won't get drawn again and again
@@ -83,9 +127,9 @@ class MazeView(object):
 
     def get_block(self, row, col, padding=0):
         # Return the block at given location with given padding
-        row, col = row*BLOCK_SIZE + padding / 2, col*BLOCK_SIZE + padding / 2
-        rect = Rect(col, row, BLOCK_SIZE - padding,
-                                        BLOCK_SIZE - padding)
+        row = row*self.block_size + padding / 2
+        col = col*self.block_size + padding / 2
+        rect = Rect(col, row, self.block_size - padding, self.block_size - padding)
         return rect
 
     def draw_maze(self):
@@ -108,21 +152,29 @@ class MazeView(object):
                         pygame.draw.rect(self.screen, BLOCK_COLOR, rect)
                 except:
                     print('rogue coors ', row, col)
+                    print(self.get_block(row, col))
 
         pygame.display.flip()
 
 if __name__ == '__main__':
-    m = maze.Maze.Random(100, 100, 0.23, (1, 1), (98, 98))
+    os.environ['SDL_VIDEO_WINDOW_POS'] = "{x}, {y}".format(x = 10, y = 30)
+
+    from random import randint
+    start, end = [(randint(0, 199), randint(0, 199)) for _ in range(2)]
+    
+    m = maze.Maze.Random(200, 200, 0.33, start, end)
+    
     r1 = mr.AStarTiebreakRunner()
     r2 = mr.BreathRunner()
     r3 = mr.GreedyFirstRunner()
     r4 = mr.AStarRunner()
-    view = MazeView(m, [r1, r2, r3, r4])
-    while view.running:
-        view.step()
+    view = MazeView(m, [r1], 5, 5)
+    view.run(False)
     print('Breath ', len(r2), len(r2.came_from),
             '\ngreedy ', len(r3), len(r3.came_from),
             '\nA* ', len(r4), len(r4.came_from),
             '\nA* tiebreak ', len(r1), len(r1.came_from))
+    
+
     input()
 
